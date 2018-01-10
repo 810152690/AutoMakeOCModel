@@ -1,0 +1,2 @@
+# AutoMakeOCModel
+根据json数据通过ruby自动生成OCModel
