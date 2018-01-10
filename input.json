@@ -1,0 +1,22 @@
+{
+ "President": "Alan Isaac",
+ "CEO": 20,
+   
+ "India<NSString>": [
+  "Sachin Tendulkar",
+  "Virender Sehwag",
+  "Gautam Gambhir"
+ ],
+  
+ "Srilanka<Country>": [
+  {"name<Town>":[{"TownName":"Lasith Malinga"}]},
+  {"name":"Angelo Mathews"},
+  {"name":"Kumar Sangakkara"}
+ ],
+  
+ "England<NSString>": [
+  "Alastair Cook",
+  "Jonathan Trott",
+  "Kevin Pietersen"
+ ]
+}
