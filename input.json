@@ -2,19 +2,23 @@
  "President": "Alan Isaac",
  "CEO": 20,
    
- "India<NSString>": [
+ "India": [
   "Sachin Tendulkar",
   "Virender Sehwag",
   "Gautam Gambhir"
  ],
-  
- "Srilanka<Country>": [
-  {"name<Town>":[{"TownName":"Lasith Malinga"}]},
-  {"name":"Angelo Mathews"},
-  {"name":"Kumar Sangakkara"}
+ "info":{
+ 	"name":"zbq",
+ 	"sex":1,
+ 	"age":18
+ },
+ "Srilanka": [
+  {"name":{"TownName":"Lasith Malinga"}},
+  {"name":{"TownName":"Angelo Mathews"}},
+  {"name":{"TownName":"Kumar Sangakkara"}}
  ],
   
- "England<NSString>": [
+ "England": [
   "Alastair Cook",
   "Jonathan Trott",
   "Kevin Pietersen"

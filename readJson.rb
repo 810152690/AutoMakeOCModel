@@ -10,16 +10,13 @@ obj = fileManager.readJSONContentFromFile('input.json')
 keys = obj.keys
 values = obj.values
 
-model = OCClass.new(keys, values)
-@generator.addClass(model)
-
 puts "Enter className"
 className = gets
 
 className = className.delete("\n")
 
 # 设置类名
-@generator.setClassName(className)
+@generator.setClassInfo(className, keys, values)
 
 hContent = @generator.createHeaderFileContent
 mContent = @generator.createMFileContent

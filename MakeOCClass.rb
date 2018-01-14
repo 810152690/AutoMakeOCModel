@@ -9,13 +9,14 @@ class Property
 	attr_accessor :type
 	attr_accessor :relation_type
 	attr_accessor :auto_type
+	attr_accessor :containerPropertyClassName#容器里面类名
 
 	def initialize
 		yield self if block_given?
 	end
 
 	def property_declare_str
-		"@property(#{auto_type}, #{relation_type}) #{type}* #{name};"
+		"@property(#{auto_type}, #{relation_type}) #{type} *#{name};"
 	end
 
 	def property_encode_str
@@ -33,12 +34,13 @@ class OCClass
 	attr_accessor :propertyDemoValues
 	attr_accessor :relateClasses
 
-	def initialize (keys, values)
+	def initialize (className, keys, values)
 		yield self if block_given?
 		#初始化变量
 		self.propertyies = []
 		self.propertyDemoValues = values
 		self.relateClasses = []
+		self.className = className
 		self.createProperties(keys)
 	end
 
@@ -46,10 +48,29 @@ class OCClass
 		self.propertyies << p
 	end
 
-	def setClassName(className)
-		self.className = className
+	def modelContainerPropertyGenericClass#容器中类名
+		declare = ""
+
+		for i in 0...self.propertyies.length
+			property = self.propertyies[i]
+			if property.type == "NSArray"
+				if declare.empty?
+					declare << "+ (NSDictionary *)modelContainerPropertyGenericClass {\n	return @{"
+				end
+				declare << " #{property.name} : [#{property.containerPropertyClassName} class]" 
+
+				if i != self.propertyies.length-1
+					declare << ", "
+				end
+			end
+		end
+		if !declare.empty?
+			declare << "};\n}"
+		end
+		return declare
 	end
 
+	#h文件
 	def createHFileContent
 		className = self.className.delete("\n")
 
@@ -70,6 +91,7 @@ class OCClass
 		return s
 	end
 
+	#m文件
 	def createMFileContent
 		className = self.className.delete("\n")
 
@@ -77,9 +99,14 @@ class OCClass
 		for i in 0...self.relateClasses.length
 			relateClass = self.relateClasses[i]
 			content << relateClass.createMFileContent
+
 		end
 
-		content << "@implementation #{className} \n\n\n@end\n\n\n"
+		content << "@implementation #{className} \n\n\n"
+
+		content << "#{self.modelContainerPropertyGenericClass}\n\n"
+
+		content << "@end\n\n\n"
 
 		return content
 	end
@@ -88,55 +115,62 @@ class OCClass
   		true if Float(string) rescue false
 	end
 
+	#属性
 	def createProperties(keys)
 		
 		for i in 0...keys.length
-			puts "property #{self.propertyDemoValues[i]}"
 			key = keys[i]
 			value = self.propertyDemoValues[i]
-			#递归处理
-			if key.include? "<"#关联类标识
-				relateClassNameArr = key.split("<")
-				key = relateClassNameArr[0]#解析出真正的key(去掉<后面的内容)
 
-				relateClassNameAfter = relateClassNameArr[1]
-				relateClassNameAfterArr = relateClassNameAfter.split(">")
-				relateClassName = relateClassNameAfterArr[0]
-				puts "relateClassName #{relateClassName}"
+			if value.is_a?(Array)#数组类型
+				keyClassName = "NSString"
 
-				type = "NSArray"
-				if !relateClassName.empty? && !relateClassName.eql?("NSString")#既不是空的类型也不是NSString类型
-					if !value.empty?
-						relateObj = value[0]
-						relateKeys = relateObj.keys
-						relateValues = relateObj.values
-
-						relateModel = OCClass.new(relateKeys, relateValues)
-						relateModel.className = relateClassName;
-
-						self.relateClasses << relateModel
-					end	
+				relateObj = value[0]
+				if !relateObj.is_a?(String)
+					#定义子类
+					puts "Enter #{self.className}类中 #{key}的类名 ： "#输入了类名
+					keyClassName = gets
+					keyClassName = keyClassName.delete("\n")
+					relateObj = value[0]
+					relateKeys = relateObj.keys
+					relateValues = relateObj.values
+					relateModel = OCClass.new(keyClassName, relateKeys, relateValues)
+					self.relateClasses << relateModel
 				end
 
+				#定义属性
 				property = Property.new
 				property.name = key
-				property.type =  type
+				property.containerPropertyClassName = keyClassName
+				property.type =  "NSArray"
 				property.relation_type = "strong"
 				property.auto_type = "nonatomic"
+				self.propertyies << property
+			elsif value.is_a?(Hash)#字典类型
+				#定义子类
+				puts "Enter #{self.className}类中 #{key}的类名 ： "#输入了类名
+				keyClassName = gets
+				keyClassName = keyClassName.delete("\n")
+				relateKeys = value.keys
+				relateValues = value.values	
+				relateModel = OCClass.new(keyClassName, relateKeys, relateValues)
+				self.relateClasses << relateModel
 
+				#定义属性
+				property = Property.new
+				property.name = key
+				property.type =  keyClassName
+				property.relation_type = "strong"
+				property.auto_type = "nonatomic"
 				self.propertyies << property
 
 			else#简单类型
 				# value.extend StringNumber
-				puts is_number?(value)
-
-
 				property = Property.new
 				property.name = key
 				property.type =  is_number?(value) ? "NSNumber" : "NSString"
 				property.relation_type = "strong"
 				property.auto_type = "nonatomic"
-
 				self.propertyies << property
 			end
 			
@@ -147,26 +181,13 @@ end
 class Generator
 
 	attr_accessor :ocClass
-	attr_accessor :className
 
 	def initialize
 		yield self if block_given?
 	end
 
-	def addClass(ocClass)
-		self.ocClass = ocClass
-		if self.className
-			className = self.className.delete("\n")
-			self.ocClass.className = className
-		end
-	end
-
-	def setClassName(className)
-		self.className = className
-		if self.ocClass
-			className = self.className.delete("\n")
-			self.ocClass.className = className
-		end
+	def setClassInfo(className, keys, values)
+		self.ocClass = OCClass.new(className, keys, values)
 	end
 
 	def createHeaderFileContent
